@@ -1,15 +1,14 @@
 """
 Module implements SNet class as discussed in Curth & van der Schaar (2021)
 """
+
 # Author: Alicia Curth
 from typing import Callable, List, Tuple
 
+import catenets.logger as log
+import jax
 import jax.numpy as jnp
 import numpy as onp
-from jax import grad, jit, random
-from jax.example_libraries import optimizers
-
-import catenets.logger as log
 from catenets.models.constants import (
     DEFAULT_AVG_OBJECTIVE,
     DEFAULT_BATCH_SIZE,
@@ -43,6 +42,8 @@ from catenets.models.jax.model_utils import (
     make_val_split,
 )
 from catenets.models.jax.representation_nets import mmd2_lin
+from jax import grad, jit, random
+from jax.example_libraries import optimizers
 
 DEFAULT_UNITS_R_BIG_S = 100
 DEFAULT_UNITS_R_SMALL_S = 50
@@ -391,6 +392,10 @@ def train_snet(
             "using absolute values or frobenious norms."
         )
 
+    @jit
+    def print_tensor(x):
+        print(x)
+
     # complete loss function for all parts
     @jit
     def loss_snet(
@@ -459,6 +464,15 @@ def train_snet(
                 + 0.5 * (penalty_l2 * (weightsq_body + weightsq_prop) + weightsq_head)
             )
         else:
+            # jax.debug.print("Loss 0 {}", loss_0)
+            # jax.debug.print("Loss 1 {}", loss_1)
+            # jax.debug.print("Loss prop {}", loss_prop)
+            # jax.debug.print("Loss disc {}", loss_disc)
+            # jax.debug.print("Loss o {}", loss_o)
+            # jax.debug.print("Weightsq body {}", weightsq_body)
+            # jax.debug.print("Weightsq head {}", weightsq_head)
+            # jax.debug.print("Weightsq prop {}", weightsq_prop)
+
             n_batch = y.shape[0]
             return (
                 (loss_0 + loss_1) / n_batch

@@ -1,15 +1,13 @@
 """
 Implements a T-Net: T-learner for CATE based on a dense NN
 """
+
 # Author: Alicia Curth
 from typing import Any, Callable, List, Tuple
 
+import catenets.logger as log
 import jax.numpy as jnp
 import numpy as onp
-from jax import grad, jit, random
-from jax.example_libraries import optimizers
-
-import catenets.logger as log
 from catenets.models.constants import (
     DEFAULT_AVG_OBJECTIVE,
     DEFAULT_BATCH_SIZE,
@@ -34,6 +32,8 @@ from catenets.models.jax.model_utils import (
     heads_l2_penalty,
     make_val_split,
 )
+from jax import grad, jit, random
+from jax.example_libraries import optimizers
 
 
 class TNet(BaseCATENet):
@@ -427,7 +427,7 @@ def _train_tnet_jointly(
 
         if i % n_iter_print == 0:
             log.debug(f"Epoch: {i}, current {val_string} loss {l_curr}")
-
+            print(f"Epoch: {i}, current {val_string} loss {l_curr}")
         if early_stopping and ((i + 1) * n_batches > n_iter_min):
             if l_curr < l_best:
                 l_best = l_curr
