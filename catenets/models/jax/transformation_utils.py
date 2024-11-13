@@ -1,6 +1,7 @@
 """
 Utils for transformations
 """
+
 # Author: Alicia Curth
 from typing import Any, Optional
 
@@ -45,8 +46,8 @@ def aipw_te_transformation(
         # assume equal
         p = np.full(len(y), 0.5)
 
-    w_1 = w / p
-    w_0 = (1 - w) / (1 - p)
+    w_1 = w / (p + 1e-4)
+    w_0 = (1 - w) / (1 - p + 1e-4)
     return (w_1 - w_0) * y + ((1 - w_1) * mu_1 - (1 - w_0) * mu_0)
 
 
@@ -81,7 +82,7 @@ def ht_te_transformation(
     if p is None:
         # assume equal propensities
         p = np.full(len(y), 0.5)
-    return (w / p - (1 - w) / (1 - p)) * y
+    return (w / (p + 1e-6) - (1 - w) / (1 - p + 1e-6)) * y
 
 
 def ra_te_transformation(

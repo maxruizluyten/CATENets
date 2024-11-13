@@ -1,19 +1,15 @@
 """
 Base modules shared across different nets
 """
+
 # Author: Alicia Curth
 import abc
 from typing import Any, Callable, List, Optional, Tuple
 
+import catenets.logger as log
+import jax
 import jax.numpy as jnp
 import numpy as onp
-from jax import grad, jit, random
-from jax.example_libraries import optimizers, stax
-from jax.example_libraries.stax import Dense, Elu, Relu, Sigmoid
-from sklearn.base import BaseEstimator, RegressorMixin
-from sklearn.model_selection import ParameterGrid
-
-import catenets.logger as log
 from catenets.models.constants import (
     DEFAULT_BATCH_SIZE,
     DEFAULT_LAYERS_OUT,
@@ -35,6 +31,11 @@ from catenets.models.jax.model_utils import (
     check_X_is_np,
     make_val_split,
 )
+from jax import grad, jit, random
+from jax.example_libraries import optimizers, stax
+from jax.example_libraries.stax import Dense, Elu, Relu, Sigmoid
+from sklearn.base import BaseEstimator, RegressorMixin
+from sklearn.model_selection import ParameterGrid
 
 
 def ReprBlock(
@@ -129,8 +130,7 @@ class BaseCATENet(BaseEstimator, RegressorMixin, abc.ABC):
         return jnp.sqrt(jnp.mean(((y[:, 1] - y[:, 0]) - hat_te) ** 2))
 
     @abc.abstractmethod
-    def _get_train_function(self) -> Callable:
-        ...
+    def _get_train_function(self) -> Callable: ...
 
     def fit(
         self,
@@ -168,8 +168,7 @@ class BaseCATENet(BaseEstimator, RegressorMixin, abc.ABC):
         return self
 
     @abc.abstractmethod
-    def _get_predict_function(self) -> Callable:
-        ...
+    def _get_predict_function(self) -> Callable: ...
 
     def predict(
         self, X: jnp.ndarray, return_po: bool = False, return_prop: bool = False
@@ -354,19 +353,27 @@ def train_output_net_only(
                 ]
             )
             if not avg_objective:
-                return (
+                loss = (
                     -jnp.sum(
-                        targets * jnp.log(preds) + (1 - targets) * jnp.log(1 - preds)
+                        targets * jnp.log(preds + 1e-6)
+                        + (1 - targets) * jnp.log(1 - preds + 1e-6)
                     )
                     + 0.5 * penalty * weightsq
                 )
+                # jax.debug.print("preds {preds}", preds=preds)
+                # jax.debug.print("loss {loss}", loss=loss)
+                return loss
             else:
-                return (
+                loss = (
                     -jnp.average(
-                        targets * jnp.log(preds) + (1 - targets) * jnp.log(1 - preds)
+                        targets * jnp.log(preds + 1e-6)
+                        + (1 - targets) * jnp.log(1 - preds + 1e-6)
                     )
                     + 0.5 * penalty * weightsq
                 )
+                # jax.debug.print("preds {preds}", preds=preds)
+                # jax.debug.print("loss {loss}", loss=loss)
+                return loss
 
     # set optimization routine
     # set optimizer
@@ -401,13 +408,16 @@ def train_output_net_only(
             ]
             next_batch = X[idx_next, :], y[idx_next, :]
             opt_state = update(i * n_batches + b, opt_state, next_batch, penalty_l2)
-
         if (i % n_iter_print == 0) or early_stopping:
             params_curr = get_params(opt_state)
+            # print(f"Iteration {i}")
+            # print(params_curr)
+
             l_curr = loss(params_curr, (X_val, y_val), penalty_l2)
 
         if i % n_iter_print == 0:
             log.info(f"Epoch: {i}, current {val_string} loss: {l_curr}")
+            # print(f"Epoch: {i}, current {val_string} loss: {l_curr}")
 
         if early_stopping and ((i + 1) * n_batches > n_iter_min):
             # check if loss updated
@@ -419,6 +429,8 @@ def train_output_net_only(
 
             if p_curr > patience:
                 trained_params = get_params(opt_state)
+                # print("trained params")
+                # print(trained_params)
 
                 if return_val_loss:
                     # return loss without penalty

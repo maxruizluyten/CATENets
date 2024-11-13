@@ -546,6 +546,7 @@ def train_snet(
 
         if i % n_iter_print == 0:
             log.info(f"Epoch: {i}, current {val_string} loss {l_curr}")
+            print(f"Epoch: {i}, current {val_string} loss {l_curr}")
 
         if early_stopping and ((i + 1) * n_batches > n_iter_min):
             # check if loss updated
@@ -913,6 +914,7 @@ def train_snet_noprop(
 
         if i % n_iter_print == 0:
             log.info(f"Epoch: {i}, current {val_string} loss {l_curr}")
+            print(f"Epoch: {i}, current {val_string} loss {l_curr}")
 
         if early_stopping and ((i + 1) * n_batches > n_iter_min):
             # check if loss updated

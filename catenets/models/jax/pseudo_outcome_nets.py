@@ -2,15 +2,14 @@
 Implements Pseudo-outcome based Two-step Nets, namely the DR-learner, the PW-learner and the
 RA-learner.
 """
+
 # Author: Alicia Curth
 from typing import Callable, Optional, Tuple
 
+import catenets.logger as log
 import jax.numpy as jnp
 import numpy as onp
 import pandas as pd
-from sklearn.model_selection import StratifiedKFold
-
-import catenets.logger as log
 from catenets.models.constants import (
     DEFAULT_AVG_OBJECTIVE,
     DEFAULT_BATCH_SIZE,
@@ -53,6 +52,7 @@ from catenets.models.jax.transformation_utils import (
     RA_TRANSFORMATION,
     _get_transformation_function,
 )
+from sklearn.model_selection import StratifiedKFold
 
 T_STRATEGY = "T"
 S1_STRATEGY = "Tar"
@@ -633,6 +633,13 @@ def train_pseudooutcome_net(
         mu_1 = None
 
     pseudo_outcome = transformation_function(y=y, w=w, p=pi_hat, mu_0=mu_0, mu_1=mu_1)
+    print("pseudo outcomes")
+    print(pseudo_outcome)
+    print("max pseudooutcome")
+    import numpy as np
+
+    print(np.max(pseudo_outcome))
+    print(np.min(pseudo_outcome))
     if rescale_transformation:
         scale_factor = onp.std(y) / onp.std(pseudo_outcome)
         if scale_factor > 1:

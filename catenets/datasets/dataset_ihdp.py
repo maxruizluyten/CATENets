@@ -1,18 +1,18 @@
 """
 IHDP (Infant Health and Development Program) dataset
 """
+
 # stdlib
 import os
 import random
 from pathlib import Path
 from typing import Any, Tuple
 
-# third party
-import numpy as np
-
 import catenets.logger as log
 
-from .network import download_if_needed
+# third party
+import numpy as np
+from cate.CATENets.catenets.datasets.network import download_if_needed
 
 np.random.seed(0)
 random.seed(0)
@@ -203,16 +203,16 @@ def load(data_path: Path, exp: int = 1, rescale: bool = False, **kwargs: Any) ->
     data_exp_test = get_one_data_set(data_test, i_exp=exp, get_po=True)
 
     (
-        X,
-        y,
-        w,
+        X_train,
+        y_train,
+        w_train,
         cate_true_in,
-        X_t,
+        X_test,
         cate_true_out,
-        mu0,
-        mu1,
-        mu0_t,
-        mu1_t,
+        mu0_train,
+        mu1_train,
+        mu0_test,
+        mu1_test,
     ) = prepare_ihdp_data(
         data_exp,
         data_exp_test,
@@ -221,12 +221,12 @@ def load(data_path: Path, exp: int = 1, rescale: bool = False, **kwargs: Any) ->
     )
 
     return (
-        X,
-        w,
-        y,
-        np.asarray([mu0, mu1]).squeeze().T,
-        X_t,
-        np.asarray([mu0_t, mu1_t]).squeeze().T,
+        X_train,
+        w_train,
+        y_train,
+        np.asarray([mu0_train, mu1_train]).squeeze().T,
+        X_test,
+        np.asarray([mu0_test, mu1_test]).squeeze().T,
     )
 
 
@@ -260,7 +260,7 @@ def load_raw(data_path: Path) -> Tuple:
 
     download_if_needed(train_csv, http_url=TRAIN_URL)
     download_if_needed(test_csv, http_url=TEST_URL)
-
+    print(train_csv)
     data_train = load_data_npz(train_csv, get_po=True)
     data_test = load_data_npz(test_csv, get_po=True)
 

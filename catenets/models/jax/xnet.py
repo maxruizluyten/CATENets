@@ -1,12 +1,12 @@
 """
 Module implements X-learner from Kuenzel et al (2019) using NNs
 """
+
 # Author: Alicia Curth
 from typing import Callable, Optional, Tuple
 
-import jax.numpy as jnp
-
 import catenets.logger as log
+import jax.numpy as jnp
 from catenets.models.constants import (
     DEFAULT_AVG_OBJECTIVE,
     DEFAULT_BATCH_SIZE,
@@ -268,6 +268,7 @@ def train_x_net(
 
     # first stage: get estimates of PO regression
     log.debug("Training first stage")
+    print("Training first stage")
 
     mu_hat_0, mu_hat_1 = _get_first_stage_pos(
         X,
@@ -297,6 +298,8 @@ def train_x_net(
     if weight_strategy is None or weight_strategy == -1:
         # also fit propensity estimator
         log.debug("Training propensity net")
+        print("Training propensity net")
+        print("treatment")
         params_prop, predict_fun_prop = train_output_net_only(
             X,
             w,
@@ -324,9 +327,11 @@ def train_x_net(
 
     # second stage
     log.debug("Training second stage")
+    print("Training second stage")
     if not weight_strategy == 0:
         # fit tau_0
         log.debug("Fitting tau_0")
+        print("Fitting tau_0")
         pseudo_outcome0 = mu_hat_1 - y[w == 0]
         params_tau0, predict_fun_tau0 = train_output_net_only(
             X[w == 0],
@@ -356,6 +361,7 @@ def train_x_net(
     if not weight_strategy == 1:
         # fit tau_1
         log.debug("Fitting tau_1")
+        print("Fitting tau_1")
         pseudo_outcome1 = y[w == 1] - mu_hat_0
         params_tau1, predict_fun_tau1 = train_output_net_only(
             X[w == 1],

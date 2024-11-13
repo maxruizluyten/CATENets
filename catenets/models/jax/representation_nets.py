@@ -2,15 +2,14 @@
 Module implements SNet1 and SNet2, which are based on  CFRNet/TARNet from Shalit et al (2017) and
 DragonNet from Shi et al (2019), respectively.
 """
+
 # Author: Alicia Curth
 from typing import Any, Callable, List, Tuple
 
+import catenets.logger as log
+import jax
 import jax.numpy as jnp
 import numpy as onp
-from jax import grad, jit, random
-from jax.example_libraries import optimizers
-
-import catenets.logger as log
 from catenets.models.constants import (
     DEFAULT_AVG_OBJECTIVE,
     DEFAULT_BATCH_SIZE,
@@ -36,6 +35,8 @@ from catenets.models.jax.model_utils import (
     heads_l2_penalty,
     make_val_split,
 )
+from jax import grad, jit, random
+from jax.example_libraries import optimizers
 
 
 class SNet1(BaseCATENet):
@@ -362,10 +363,11 @@ def mmd2_lin(X: jnp.ndarray, w: jnp.ndarray) -> jnp.ndarray:
     n_t = jnp.sum(w)
 
     # normalize X so scale matters
-    X = X / jnp.sqrt(jnp.var(X, axis=0))
+    X = X / jnp.sqrt(jnp.var(X, axis=0) + 1e-6)
 
-    mean_control = (n / (n - n_t)) * jnp.mean((1 - w) * X, axis=0)
-    mean_treated = (n / n_t) * jnp.mean(w * X, axis=0)
+    mean_control = (n / (n - n_t + 1e-6)) * jnp.mean((1 - w) * X, axis=0)
+
+    mean_treated = (n / (n_t + 1e-6)) * jnp.mean(w * X, axis=0)
 
     return jnp.sum((mean_treated - mean_control) ** 2)
 
@@ -497,7 +499,10 @@ def train_snet1(
             preds = predict_fun_head(params, inputs)
             return -jnp.sum(
                 weights
-                * (targets * jnp.log(preds) + (1 - targets) * jnp.log(1 - preds))
+                * (
+                    targets * jnp.log(preds + 1e-6)
+                    + (1 - targets) * jnp.log(1 - preds + 1e-6)
+                )
             )
 
     # complete loss function for all parts
@@ -522,6 +527,10 @@ def train_snet1(
         # pass down to two heads
         loss_0 = loss_head(params[1], (reps, y, 1 - w))
         loss_1 = loss_head(params[2], (reps, y, w))
+
+        # jax.debug.print("loss {loss_0}", loss_0=loss_0)
+        # jax.debug.print("loss {loss_1}", loss_1=loss_1)
+        # jax.debug.print("disc {disc}", disc=disc)
 
         # regularization on representation
         weightsq_body = sum(
@@ -570,6 +579,7 @@ def train_snet1(
     train_indices = onp.arange(n)
 
     l_best = LARGE_VAL
+    log.info(f"LARGE VALUE: {l_best}")
     p_curr = 0
 
     # do training
